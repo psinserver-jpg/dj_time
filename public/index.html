@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#087d68">
+  <meta name="description" content="대진전자통신고등학교의 학급별 시간표. 컴퓨터에서는 주간 시간표로, 모바일에서는 오늘의 수업으로 확인하세요.">
+  <title>대진 시간표 · 대진전자통신고등학교</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/style.css">
+  <script defer src="/sample-data.js"></script>
+  <script defer src="/app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">시간표로 바로가기</a>
+  <aside class="sidebar" aria-label="주 메뉴">
+    <a href="/" class="brand"><img src="/favicon.svg" alt="" width="40" height="40"><span>대진 시간표<small>DAEJIN TIMETABLE</small></span></a>
+    <div class="sidebar-school">대진전자통신고등학교<span>우리 반의 한 주, 한눈에.</span></div>
+    <nav><button class="nav-item active" data-action="timetable"><span data-icon="calendar"></span>시간표<span class="nav-active-dot"></span></button><button class="nav-item" data-action="class"><span data-icon="users"></span>내 학급</button><button class="nav-item" data-action="settings"><span data-icon="settings"></span>설정 및 사용 안내</button></nav>
+    <div class="sidebar-bottom"><span class="small-caption">오늘도, 차근차근.</span><div class="school-tag"><span data-icon="school"></span><span>대진전자통신고등학교<small>학급 시간표 서비스</small></span></div></div>
+  </aside>
+  <div class="workspace">
+    <header class="topbar"><div class="topbar-breadcrumb">학교생활 <span>/</span> <strong>시간표</strong></div><a href="/" class="mobile-brand"><img src="/favicon.svg" alt="" width="30" height="30">대진 시간표</a><div class="topbar-actions"><span id="mode-pill" class="mode-pill">샘플 모드</span><button class="icon-button" data-action="settings" aria-label="설정 및 사용 안내"><span data-icon="settings"></span></button></div></header>
+    <main id="main">
+      <section class="page-heading"><div><p class="eyebrow">MY CLASS, MY WEEK</p><h1>우리 반 시간표<span class="heading-dot">.</span></h1><p class="heading-description">대진전자통신고등학교</p></div><button class="class-button" data-action="class"><span class="class-icon" data-icon="users"></span><span><small>내 학급</small><strong id="class-label">1학년 1반</strong></span><span data-icon="chevronDown"></span></button></section>
+      <section id="data-notice" class="data-notice" aria-label="데이터 안내"><span data-icon="info"></span><p id="notice-text">화면을 살펴볼 수 있는 <strong>샘플 시간표</strong>입니다. 실제 학교 시간표와 다릅니다.</p><button data-action="settings">API 연결 안내<span data-icon="external"></span></button></section>
+      <section class="mobile-summary" aria-label="선택한 날짜"><span id="mobile-summary-date" class="summary-date"></span><div><h2 id="mobile-summary-title">오늘의 수업</h2><span class="summary-mark" data-icon="calendar"></span></div><p id="mobile-summary-copy"></p></section>
+      <div class="content-layout"><section class="schedule-panel" aria-label="학급 시간표">
+        <div class="schedule-toolbar"><div class="date-controls"><div class="date-title"><h2 id="week-label">이번 주</h2><span id="week-range"></span></div><div class="week-buttons"><button class="icon-button" id="prev-week" aria-label="이전 주"><span data-icon="chevronLeft"></span></button><button class="icon-button" id="next-week" aria-label="다음 주"><span data-icon="chevronRight"></span></button><button class="today-button" id="today-button">오늘</button></div></div><div class="view-controls"><div class="view-switch" aria-label="시간표 보기 방식"><button id="week-view" aria-pressed="true">주간</button><button id="day-view" aria-pressed="false">일간</button></div><button class="icon-button" id="refresh-button" aria-label="시간표 새로고침"><span data-icon="refresh"></span></button></div></div>
+        <div class="mobile-weekbar"><button class="icon-button" id="mobile-prev" aria-label="이전 주"><span data-icon="chevronLeft"></span></button><span id="mobile-week-label"></span><button class="icon-button" id="mobile-next" aria-label="다음 주"><span data-icon="chevronRight"></span></button><button class="today-button" id="mobile-today">오늘</button></div>
+        <div id="mobile-days" class="mobile-days" aria-label="날짜 선택"></div>
+        <div id="loading-state" class="loading-state" hidden><span class="spinner"></span>시간표를 불러오는 중이에요.</div>
+        <div id="schedule-content" aria-busy="false"><div id="week-grid" class="week-grid"></div><div id="day-list" class="day-list"></div></div>
+        <div class="panel-footer"><span id="source-label"><span data-icon="shield"></span>미리보기용 샘플 데이터</span><span id="updated-label"></span></div>
+      </section>
+      <aside class="day-panel" aria-label="선택한 날 요약"><div class="day-panel-heading"><span class="eyebrow">A DAY AT A GLANCE</span><h2 id="aside-title">오늘의 수업</h2><p id="aside-date"></p></div><div class="day-count"><strong id="lesson-count">7</strong><span>개의 수업<small id="class-caption">1학년 1반</small></span><span data-icon="book"></span></div><div id="aside-lessons" class="aside-lessons"></div><div class="day-note"><span data-icon="info"></span><p>수업 시간과 교실은<br>학교 안내를 확인해 주세요.</p></div></aside></div>
+      <footer class="page-footer"><span>DAEJIN TIMETABLE</span><p>학교 공식 서비스가 아닌 시간표 조회 웹사이트입니다.</p><a href="https://open.neis.go.kr" target="_blank" rel="noopener noreferrer">나이스 교육정보 개방 포털<span data-icon="external"></span></a></footer>
+    </main>
+  </div>
+  <nav class="mobile-nav" aria-label="하단 메뉴"><button class="active" data-action="timetable"><span data-icon="calendar"></span>시간표</button><button data-action="class"><span data-icon="users"></span>내 학급</button><button data-action="settings"><span data-icon="settings"></span>설정</button></nav>
+  <dialog id="class-dialog" class="modal"><div class="modal-heading"><div><p class="eyebrow">MY CLASS</p><h2>내 학급 선택</h2></div><button class="icon-button" data-close aria-label="닫기"><span data-icon="close"></span></button></div><p class="modal-description">선택한 학급은 이 기기에 저장됩니다.</p><form id="class-form"><div class="form-row"><label>학년<select id="grade-select" name="grade"></select></label><label>반<select id="class-select" name="class"></select></label></div><p id="class-help" class="field-help"></p><p id="class-error" class="form-error" role="alert" hidden></p><button type="submit" class="primary-button">이 학급의 시간표 보기</button></form></dialog>
+  <dialog id="settings-dialog" class="modal settings-modal"><div class="modal-heading"><div><p class="eyebrow">SETTINGS & GUIDE</p><h2>설정 및 사용 안내</h2></div><button class="icon-button" data-close aria-label="닫기"><span data-icon="close"></span></button></div><div class="connection-card"><span data-icon="shield"></span><div><strong id="connection-title">샘플 모드로 사용 중</strong><p id="connection-description">API 키를 연결하면 실제 시간표를 조회할 수 있어요.</p></div></div><div id="sample-toggle-row" class="toggle-row" hidden><label for="sample-toggle">샘플 시간표 미리보기<small>실제 시간표 대신 예시를 표시합니다.</small></label><input type="checkbox" id="sample-toggle" role="switch"></div><h3>실제 시간표 연결하기</h3><ol class="setup-steps"><li><span>1</span><p><a href="https://open.neis.go.kr" target="_blank" rel="noopener noreferrer">나이스 교육정보 개방 포털<span data-icon="external"></span></a>에서 회원가입 후 인증키를 발급받으세요.</p></li><li><span>2</span><p>프로젝트의 <code>.env.example</code>을 <code>.env</code>로 복사하고 <code>NEIS_API_KEY</code>에 인증키를 입력하세요.</p></li><li><span>3</span><p>터미널에서 <code>npm start</code>로 API 서버를 실행하고 안내된 웹 주소로 접속하세요. 키를 변경하면 서버를 다시 실행하세요.</p></li></ol><p class="key-note">인증키는 서버에서 사용하며 브라우저로 전달되지 않습니다.</p><h3>시간표 확인 안내</h3><p class="guide-copy">PC에서는 한 주를 표로, 모바일에서는 선택한 날을 수업 카드로 확인합니다. 수업을 누르면 상세 정보를 볼 수 있어요. 나이스 등록 내용과 학교 현장 일정은 다를 수 있으니 최종 일정은 학교 안내를 확인해 주세요.</p><button class="secondary-button" id="check-connection">연결 상태 다시 확인</button></dialog>
+  <dialog id="lesson-dialog" class="modal lesson-modal"><div class="modal-heading"><p class="eyebrow">CLASS DETAILS</p><button class="icon-button" data-close aria-label="닫기"><span data-icon="close"></span></button></div><div id="lesson-detail"></div></dialog>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <noscript><div class="noscript-message">시간표를 보려면 브라우저에서 JavaScript를 활성화해 주세요.</div></noscript>
+</body>
+</html>

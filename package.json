@@ -1,0 +1,9 @@
+{
+  "name": "daejin-timetable",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "대진전자통신고등학교 반응형 시간표 · NEIS API",
+  "engines": { "node": ">=20" },
+  "scripts": { "start": "node server.mjs", "build": "node scripts/build-static.mjs", "test": "node --test" }
+}

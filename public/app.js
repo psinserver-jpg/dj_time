@@ -29,6 +29,8 @@ let requestVersion=0,toastTimer;
 function toast(message){const node=$('#toast');node.textContent=message;node.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>node.classList.remove('show'),3500);}
 const staticConfig=()=>({keyConfigured:false,defaultMode:'sample',static:true});
 async function readConfig(){
+  const embedded=document.getElementById('neis-snapshot');
+  if(embedded){const snapshot=JSON.parse(embedded.textContent);if(snapshot.version!==1||!snapshot.weeks||!snapshot.classesByYear)throw new Error('게시된 시간표 데이터 형식을 확인해 주세요.');return {keyConfigured:false,defaultMode:'live',snapshot};}
   if(location.protocol==='file:')return staticConfig();
   let response;
   try{response=await fetch('/api/config',{signal:AbortSignal.timeout(18000)});}catch{throw new Error('웹사이트에 연결할 수 없습니다. 인터넷 연결을 확인해 주세요.');}
@@ -38,6 +40,17 @@ async function readConfig(){
   return response.json();
 }
 async function api(url){
+  if(state.config?.snapshot){
+    const request=new URL(url,'https://daejin.invalid'),snapshot=state.config.snapshot;
+    if(request.pathname==='/api/classes')return {classes:snapshot.classesByYear[request.searchParams.get('year')]||[],source:'live',year:request.searchParams.get('year')};
+    if(request.pathname==='/api/timetable'){
+      const selected=state.selectedClass,week=snapshot.weeks[request.searchParams.get('from')];
+      if(!week)throw new Error('이 주의 시간표는 게시되지 않았습니다. 이전 주·이번 주·다음 주를 선택해 주세요.');
+      const classId=[selected.grade,selected.className,selected.department||'',selected.course||''].join('|');
+      return {lessons:week.classes[classId]||[],source:'live',fetchedAt:snapshot.generatedAt};
+    }
+    throw new Error('지원하지 않는 요청입니다.');
+  }
   if(state.config?.static){
     const request=new URL(url,'https://daejin.invalid');
     if(request.searchParams.get('mode')==='live')throw new Error('실제 조회는 인증키가 설정된 API 서버 주소에서 이용해 주세요.');
@@ -68,14 +81,17 @@ function renderHeader(){
   $('#mobile-summary-copy').textContent=state.error?'아래 안내를 확인하고 다시 시도해 주세요.':state.loading?classText():`${classText()} · ${state.mode==='sample'?'샘플 시간표':state.selectedClass.department||'나이스 시간표'}`;
   const pill=$('#mode-pill');pill.textContent=state.mode==='sample'?'샘플 모드':'NEIS 시간표';pill.classList.toggle('live',state.mode==='live');
   const notice=$('#data-notice');notice.classList.toggle('error',Boolean(state.error));
-  $('#notice-text').innerHTML=state.error?escape(state.error):state.mode==='sample'?'화면을 살펴볼 수 있는 <strong>샘플 시간표</strong>입니다. 실제 학교 시간표와 다릅니다.':'나이스에 등록된 시간표입니다. 변경된 수업은 학교 안내를 확인해 주세요.';
+  $('#notice-text').innerHTML=state.error?escape(state.error):state.mode==='sample'?'화면을 살펴볼 수 있는 <strong>샘플 시간표</strong>입니다. 실제 학교 시간표와 다릅니다.':state.config?.snapshot?'나이스 실제 시간표입니다. 게시된 조회 시점을 확인하고, 변경 수업은 학교 안내를 확인해 주세요.':'나이스에 등록된 시간표입니다. 변경된 수업은 학교 안내를 확인해 주세요.';
   notice.querySelector('button').textContent=state.mode==='sample'?'API 연결 안내':'사용 안내';
   $('#source-label').innerHTML=icon('shield')+(state.mode==='sample'?'미리보기용 샘플 데이터':'나이스 교육정보 개방 포털');
-  $('#updated-label').textContent=state.updatedAt?`${new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit'}).format(new Date(state.updatedAt))} 조회 · 한국 시간` : '';
+  $('#updated-label').textContent=state.updatedAt?`${new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}).format(new Date(state.updatedAt))} 조회 · 한국 시간` : '';
   $('#week-view').setAttribute('aria-pressed',String(state.view==='week'));$('#day-view').setAttribute('aria-pressed',String(state.view==='day'));
-  $('#connection-title').textContent=state.config?.keyConfigured?'나이스 인증키 설정됨':'샘플 모드로 사용 중';
-  $('#connection-description').textContent=state.config?.static?'웹 파일로 사용 중입니다. 실제 조회는 아래 안내대로 API 서버를 연결해 주세요.':state.config?.keyConfigured?'실제 시간표 조회 시 인증키의 유효성을 확인합니다.':'API 키를 연결하면 실제 시간표를 조회할 수 있어요.';
+  $('#connection-title').textContent=state.config?.snapshot?'실제 나이스 시간표 게시 중':state.config?.keyConfigured?'나이스 인증키 설정됨':'샘플 모드로 사용 중';
+  $('#connection-description').textContent=state.config?.snapshot?'이전 주·이번 주·다음 주의 30개 학급 시간표를 확인할 수 있어요. 인증키는 웹사이트에 포함되지 않습니다.':state.config?.static?'웹 파일로 사용 중입니다. 실제 조회는 아래 안내대로 API 서버를 연결해 주세요.':state.config?.keyConfigured?'실제 시간표 조회 시 인증키의 유효성을 확인합니다.':'API 키를 연결하면 실제 시간표를 조회할 수 있어요.';
   $('#sample-toggle-row').hidden=!state.config?.keyConfigured;$('#sample-toggle').checked=state.mode==='sample';
+  const steps=$('#settings-dialog .setup-steps');
+  steps.hidden=Boolean(state.config?.snapshot);steps.previousElementSibling.hidden=Boolean(state.config?.snapshot);$('#settings-dialog .key-note').hidden=Boolean(state.config?.snapshot);
+  $('#check-connection').textContent=state.config?.snapshot?'최신 게시본 불러오기':'연결 상태 다시 확인';
 }
 function emptyMarkup(title,description){return `<div class="empty-state">${icon('calendar')}<h3>${escape(title)}</h3><p>${escape(description)}</p></div>`;}
 function lessonButton(lesson,type){const tone=subjectTone(lesson.subject),label=`${prettyDate(lesson.date)} ${lesson.period}교시 ${lesson.subject}`;if(type==='grid')return `<button class="lesson-cell tone-${tone}" data-lesson="${escape(lesson.id)}" aria-label="${escape(label)}"><span class="subject-name">${escape(lesson.subject)}</span><span class="subject-meta">${state.mode==='sample'?'샘플 수업':escape(lesson.department||'나이스 등록')}</span></button>`;if(type==='aside')return `<button class="aside-lesson" data-lesson="${escape(lesson.id)}"><span class="aside-period">${lesson.period}</span><span><strong>${escape(lesson.subject)}</strong><small>${state.mode==='sample'?'샘플 수업':`${lesson.period}교시`}</small></span></button>`;return `<button class="day-card tone-${tone}" data-lesson="${escape(lesson.id)}" aria-label="${escape(label)}"><span class="period-badge">${lesson.period}교시</span><span><strong>${escape(lesson.subject)}</strong><small>${state.mode==='sample'?'미리보기용 샘플 수업':escape(lesson.department||'나이스 등록 시간표')}</small></span>${icon('chevronRight')}</button>`;}
@@ -134,7 +150,7 @@ async function loadTimetable({classes=false}={}){
   }catch(error){if(version!==requestVersion)return;state.error=error.message;}
   if(version===requestVersion){setLoading(false);renderSchedule();}
 }
-function changeWeek(amount){const next=addDays(state.weekStart,amount*7);if(+next.slice(0,4)<2025||+next.slice(0,4)>2099){toast('2025년 이후의 날짜를 선택해 주세요.');return;}const offset=Math.min(4,Math.max(0,(dateObj(state.selectedDate)-dateObj(state.weekStart))/86400000));state.weekStart=next;state.selectedDate=addDays(next,offset);return loadTimetable();}
+function changeWeek(amount){const next=addDays(state.weekStart,amount*7);if(state.config?.snapshot&&!state.config.snapshot.weeks[next]){toast('게시된 시간표 범위는 이전 주·이번 주·다음 주입니다.');return;}if(+next.slice(0,4)<2025||+next.slice(0,4)>2099){toast('2025년 이후의 날짜를 선택해 주세요.');return;}const offset=Math.min(4,Math.max(0,(dateObj(state.selectedDate)-dateObj(state.weekStart))/86400000));state.weekStart=next;state.selectedDate=addDays(next,offset);return loadTimetable();}
 function goToday(){state.selectedDate=today();const start=monday(today());if(state.weekStart===start)renderSchedule();else{state.weekStart=start;return loadTimetable();}}
 function showDialog(id){const dialog=$(id);if(!dialog.open)dialog.showModal();}
 function showClassDialog(){const error=$('#class-error');error.hidden=true;if(state.error&&state.classes.length===0){error.textContent=state.error;error.hidden=false;}$('#grade-select').value=state.selectedClass.grade;renderClassPicker();showDialog('#class-dialog');}
@@ -152,7 +168,7 @@ $('#week-view').addEventListener('click',()=>{state.view='week';renderSchedule()
 $('#grade-select').addEventListener('change',renderClassPicker);
 $('#class-form').addEventListener('submit',async event=>{event.preventDefault();const selected=state.classes.find(item=>item.id===$('#class-select').value);if(!selected)return;state.selectedClass=selected;storeClass(selected);$('#class-dialog').close();await loadTimetable();if(!state.error)toast(`${classText()} 시간표를 불러왔어요.`);});
 $('#sample-toggle').addEventListener('change',async event=>{state.mode=event.target.checked?'sample':'live';state.classes=[];state.classYear='';await loadTimetable({classes:true});});
-$('#check-connection').addEventListener('click',async()=>{const button=$('#check-connection');button.disabled=true;try{state.config=await readConfig();if(!state.config.keyConfigured)state.mode='sample';else state.mode=$('#sample-toggle').checked?'sample':'live';state.classes=[];await loadTimetable({classes:true});toast(state.error?'설정과 인증키를 확인해 주세요.':state.config.keyConfigured?'나이스 연결 상태를 확인했어요.':state.config.static?'웹 파일에서 샘플 시간표를 보고 있어요.':'아직 인증키가 설정되지 않았어요.');}catch(error){toast(error.message);}finally{button.disabled=false;}});
+$('#check-connection').addEventListener('click',async()=>{if(state.config?.snapshot){location.reload();return;}const button=$('#check-connection');button.disabled=true;try{state.config=await readConfig();if(state.config.snapshot)state.mode='live';else if(!state.config.keyConfigured)state.mode='sample';else state.mode=$('#sample-toggle').checked?'sample':'live';state.classes=[];await loadTimetable({classes:true});toast(state.error?'설정과 인증키를 확인해 주세요.':state.config.snapshot?'게시된 실제 시간표를 확인했어요.':state.config.keyConfigured?'나이스 연결 상태를 확인했어요.':state.config.static?'웹 파일에서 샘플 시간표를 보고 있어요.':'아직 인증키가 설정되지 않았어요.');}catch(error){toast(error.message);}finally{button.disabled=false;}});
 async function init(){renderSchedule();try{state.config=await readConfig();state.mode=state.config.defaultMode;await loadTimetable({classes:true});}catch(error){state.error=error.message;setLoading(false);renderSchedule();}}
 void init();
 
